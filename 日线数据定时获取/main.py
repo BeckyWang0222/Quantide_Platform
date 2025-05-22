@@ -14,7 +14,7 @@ import datetime
 import pandas as pd
 from typing import Dict, List, Any, Union, Optional
 
-from config import config
+from config_loader import config
 from logger import logger
 from scheduler import scheduler
 from data_fetcher import data_fetcher

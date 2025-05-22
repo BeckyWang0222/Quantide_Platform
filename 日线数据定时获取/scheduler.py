@@ -14,7 +14,7 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.executors.pool import ThreadPoolExecutor
 
-from config import SCHEDULER_CONFIG
+from config_loader import SCHEDULER_CONFIG
 from logger import logger
 from exceptions import SchedulerError
 from monitor import monitor
@@ -48,29 +48,16 @@ class Scheduler:
         """
         try:
             # 获取作业存储配置
-            job_stores_config = self.config.get('job_stores', {'default': {'type': 'memory'}})
-            job_stores = {}
-            for name, config in job_stores_config.items():
-                store_type = config.get('type')
-                if store_type == 'memory':
-                    job_stores[name] = MemoryJobStore()
-                # 可以添加其他类型的作业存储
+            job_stores = {'default': MemoryJobStore()}
 
             # 获取执行器配置
-            executors_config = self.config.get('executors', {'default': {'type': 'threadpool', 'max_workers': 10}})
-            executors = {}
-            for name, config in executors_config.items():
-                executor_type = config.get('type')
-                if executor_type == 'threadpool':
-                    max_workers = config.get('max_workers', 10)
-                    executors[name] = ThreadPoolExecutor(max_workers)
-                # 可以添加其他类型的执行器
+            executors = {'default': ThreadPoolExecutor(self.config.executors.default.max_workers)}
 
             # 获取作业默认配置
-            job_defaults = self.config.get('job_defaults', {
-                'coalesce': False,
-                'max_instances': 3
-            })
+            job_defaults = {
+                'coalesce': self.config.job_defaults.coalesce,
+                'max_instances': self.config.job_defaults.max_instances
+            }
 
             # 创建调度器
             self.scheduler = BackgroundScheduler(
@@ -133,12 +120,12 @@ class Scheduler:
         """
         try:
             # 获取定时任务配置
-            daily_data_time = self.config.get('daily_data_time', '15:30:00')
-            historical_data_time = self.config.get('historical_data_time', '01:00:00')
-            stock_list_update_time = self.config.get('stock_list_update_time', '00:10:00')
-            trade_cal_update_time = self.config.get('trade_cal_update_time', '00:20:00')
-            redis_check_time = self.config.get('redis_check_time', '07:00:00')
-            clickhouse_check_time = self.config.get('clickhouse_check_time', '07:10:00')
+            daily_data_time = self.config.daily_data_time
+            historical_data_time = self.config.historical_data_time
+            stock_list_update_time = self.config.stock_list_update_time
+            trade_cal_update_time = self.config.trade_cal_update_time
+            redis_check_time = self.config.redis_check_time
+            clickhouse_check_time = self.config.clickhouse_check_time
 
             # 解析时间
             daily_time_parts = daily_data_time.split(':')

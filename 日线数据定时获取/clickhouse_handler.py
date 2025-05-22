@@ -11,7 +11,7 @@ import pandas as pd
 from typing import Dict, List, Any, Union
 from clickhouse_driver import Client
 
-from config import CLICKHOUSE_CONFIG
+from config_loader import CLICKHOUSE_CONFIG
 from logger import logger
 from exceptions import ClickHouseConnectionError, ClickHouseOperationError
 from utils import retry
@@ -29,8 +29,8 @@ class ClickHouseHandler:
         """
         self.config = config or CLICKHOUSE_CONFIG
         self.client = None
-        self.database = self.config.get('database', 'RealTime_DailyLine_DB')
-        self.table = self.config.get('table', 'day_bar')
+        self.database = self.config.database
+        self.table = self.config.table
         self.connect()
 
     @retry(exceptions=(Exception,))
@@ -43,10 +43,10 @@ class ClickHouseHandler:
         """
         try:
             self.client = Client(
-                host=self.config.get('host', 'localhost'),
-                port=self.config.get('port', 9000),
-                user=self.config.get('user', 'default'),
-                password=self.config.get('password', ''),
+                host=self.config.host,
+                port=self.config.port,
+                user=self.config.user,
+                password=self.config.password,
                 database=self.database
             )
 
@@ -98,7 +98,7 @@ class ClickHouseHandler:
             self.client.execute(f"""
                 CREATE TABLE IF NOT EXISTS {self.database}.{self.table} (
                     symbol String,
-                    trade_date Date,
+                    frame Date,
                     open Float64,
                     high Float64,
                     low Float64,
@@ -106,14 +106,11 @@ class ClickHouseHandler:
                     vol Float64,
                     amount Float64,
                     adjust Float64,
-                    pre_close Float64,
-                    change Float64,
-                    pct_chg Float64,
                     is_st UInt8,
                     limit_up Float64,
                     limit_down Float64
                 ) ENGINE = MergeTree()
-                ORDER BY (symbol, trade_date)
+                ORDER BY (symbol, frame)
             """)
             logger.info(f"已确保表 {self.database}.{self.table} 存在")
         except Exception as e:
@@ -190,7 +187,7 @@ class ClickHouseHandler:
                 self.connect()
 
             # 构建查询SQL
-            query = f"SELECT MAX(trade_date) as latest_date FROM {self.database}.{self.table}"
+            query = f"SELECT MAX(frame) as latest_date FROM {self.database}.{self.table}"
             if symbol:
                 query += f" WHERE symbol = '{symbol}'"
 
@@ -225,7 +222,7 @@ class ClickHouseHandler:
                 self.connect()
 
             # 构建查询SQL
-            query = f"SELECT MIN(trade_date) as earliest_date FROM {self.database}.{self.table}"
+            query = f"SELECT MIN(frame) as earliest_date FROM {self.database}.{self.table}"
             if symbol:
                 query += f" WHERE symbol = '{symbol}'"
 
@@ -275,7 +272,7 @@ class ClickHouseHandler:
             date_obj = datetime.datetime.strptime(trade_date, '%Y%m%d').date()
 
             # 构建查询SQL
-            query = f"SELECT DISTINCT symbol FROM {self.database}.{self.table} WHERE trade_date = %(date)s"
+            query = f"SELECT DISTINCT symbol FROM {self.database}.{self.table} WHERE frame = %(date)s"
 
             # 执行查询
             result = self.client.execute(query, {'date': date_obj})
@@ -308,7 +305,7 @@ class ClickHouseHandler:
             date_obj = datetime.datetime.strptime(trade_date, '%Y%m%d').date()
 
             # 构建查询SQL
-            query = f"SELECT COUNT(DISTINCT symbol) FROM {self.database}.{self.table} WHERE trade_date = %(date)s"
+            query = f"SELECT COUNT(DISTINCT symbol) FROM {self.database}.{self.table} WHERE frame = %(date)s"
 
             # 执行查询
             result = self.client.execute(query, {'date': date_obj})
@@ -344,7 +341,7 @@ class ClickHouseHandler:
             # 如果没有指定预期数量，则获取系统中最大的股票数量
             if expected_count is None:
                 # 构建查询SQL
-                query = f"SELECT MAX(cnt) FROM (SELECT COUNT(DISTINCT symbol) as cnt FROM {self.database}.{self.table} GROUP BY trade_date)"
+                query = f"SELECT MAX(cnt) FROM (SELECT COUNT(DISTINCT symbol) as cnt FROM {self.database}.{self.table} GROUP BY frame)"
 
                 # 执行查询
                 result = self.client.execute(query)
@@ -400,7 +397,7 @@ class ClickHouseHandler:
             end_date_obj = datetime.datetime.strptime(end_date, '%Y%m%d').date()
 
             # 构建查询SQL，获取日期范围内的所有日期
-            query = f"SELECT DISTINCT trade_date FROM {self.database}.{self.table} WHERE trade_date BETWEEN %(start_date)s AND %(end_date)s ORDER BY trade_date"
+            query = f"SELECT DISTINCT frame FROM {self.database}.{self.table} WHERE frame BETWEEN %(start_date)s AND %(end_date)s ORDER BY frame"
 
             # 执行查询
             result = self.client.execute(query, {'start_date': start_date_obj, 'end_date': end_date_obj})

@@ -16,10 +16,10 @@ from typing import List, Dict, Any, Callable, Optional, Union
 
 from logger import logger
 from exceptions import DataFetchError, TushareAPIError
-from config import TUSHARE_CONFIG, SCHEDULER_CONFIG
+from config_loader import TUSHARE_CONFIG, SCHEDULER_CONFIG
 
 # 初始化Tushare API
-ts.set_token(TUSHARE_CONFIG['token'])
+ts.set_token(TUSHARE_CONFIG.token)
 pro = ts.pro_api()
 
 
@@ -37,10 +37,10 @@ def retry(max_retries: int = None, retry_interval: int = None,
         Callable: 装饰器函数
     """
     if max_retries is None:
-        max_retries = SCHEDULER_CONFIG.get('max_retries', 3)
+        max_retries = SCHEDULER_CONFIG.max_retries
 
     if retry_interval is None:
-        retry_interval = SCHEDULER_CONFIG.get('retry_interval', 60)
+        retry_interval = SCHEDULER_CONFIG.retry_interval
 
     def decorator(func):
         @functools.wraps(func)
