@@ -12,7 +12,7 @@ import requests
 import tushare as ts
 from typing import Dict, List, Any, Union, Optional, Tuple
 
-from config import TUSHARE_CONFIG
+from config_loader import TUSHARE_CONFIG
 from logger import logger
 from exceptions import DataFetchError, TushareAPIError
 from utils import retry, is_trade_day, get_last_trade_day
@@ -29,7 +29,7 @@ class DataFetcher:
             config (Dict, optional): Tushare配置. 默认为None，使用配置文件中的值.
         """
         self.config = config or TUSHARE_CONFIG
-        self.token = self.config.get('token')
+        self.token = self.config.token
 
         # 初始化Tushare API
         ts.set_token(self.token)
@@ -252,7 +252,7 @@ class DataFetcher:
                 batch_df = self._call_tushare_api(
                     api_name='daily',
                     params=params,
-                    fields='ts_code,trade_date,open,high,low,close,pre_close,change,pct_chg,vol,amount'
+                    fields='ts_code,trade_date,open,high,low,close,vol,amount'
                 )
 
                 if not batch_df.empty:
@@ -336,7 +336,7 @@ class DataFetcher:
                         range_df = self._call_tushare_api(
                             api_name='daily',
                             params=params,
-                            fields='ts_code,trade_date,open,high,low,close,pre_close,change,pct_chg,vol,amount'
+                            fields='ts_code,trade_date,open,high,low,close,vol,amount'
                         )
 
                         if not range_df.empty:
@@ -370,7 +370,7 @@ class DataFetcher:
         df = self._call_tushare_api(
             api_name='daily',
             params=params,
-            fields='ts_code,trade_date,open,high,low,close,pre_close,change,pct_chg,vol,amount'
+            fields='ts_code,trade_date,open,high,low,close,vol,amount'
         )
 
         if not df.empty:
@@ -427,24 +427,44 @@ class DataFetcher:
         try:
             # 获取涨跌停价格
             limit_df = self._call_tushare_api(
-                api_name='limit_list',
+                api_name='stk_limit',
                 params={'trade_date': trade_date},
-                fields='ts_code,trade_date,name,close,up_limit,down_limit'
+                fields='ts_code,trade_date,up_limit,down_limit'
             )
 
             # 获取ST股票信息
             namechange_df = self._call_tushare_api(
                 api_name='namechange',
-                params={'start_date': trade_date, 'end_date': trade_date},
+                params={},
                 fields='ts_code,name,start_date,end_date,change_reason'
             )
 
             # 处理ST信息
             st_codes = []
             if not namechange_df.empty:
-                # 筛选出ST股票
-                st_df = namechange_df[namechange_df['change_reason'].str.contains('ST', na=False)]
-                st_codes = st_df['ts_code'].tolist() if not st_df.empty else []
+                # 筛选出名称中包含ST的股票
+                st_df = namechange_df[namechange_df['name'].str.contains('ST', na=False)]
+
+                # 检查每个股票在当前日期是否为ST
+                for _, row in st_df.iterrows():
+                    ts_code = row['ts_code']
+                    start_date_str = row['start_date']
+                    end_date_str = row['end_date']
+
+                    # 转换日期格式
+                    start_date = datetime.datetime.strptime(start_date_str, '%Y%m%d')
+                    target_date = datetime.datetime.strptime(trade_date, '%Y%m%d')
+
+                    # 处理结束日期
+                    if pd.isna(end_date_str) or end_date_str is None:
+                        end_date = datetime.datetime.now()
+                    else:
+                        end_date = datetime.datetime.strptime(end_date_str, '%Y%m%d')
+
+                    # 判断当前日期是否在ST日期范围内
+                    if (target_date - start_date).days >= 0 and (target_date - end_date).days <= 0:
+                        st_codes.append(ts_code)
+                        logger.debug(f"股票 {ts_code} 在 {trade_date} 为ST股票")
 
             # 添加涨跌停和ST信息
             if not limit_df.empty:
@@ -459,19 +479,37 @@ class DataFetcher:
             # 添加ST标志
             df['is_st'] = df['ts_code'].isin(st_codes).astype(int)
 
-            # 添加复权因子（这里简化处理，实际应该从adj_factor接口获取）
-            df['adjust'] = 1.0
+            # 获取复权因子
+            adj_factor_df = self._call_tushare_api(
+                api_name='adj_factor',
+                params={'trade_date': trade_date},
+                fields='ts_code,trade_date,adj_factor'
+            )
+
+            # 添加复权因子
+            if not adj_factor_df.empty:
+                # 合并复权因子信息
+                df = pd.merge(df, adj_factor_df[['ts_code', 'adj_factor']],
+                             on='ts_code', how='left')
+                # 将缺失值填充为1.0
+                df['adj_factor'] = df['adj_factor'].fillna(1.0)
+            else:
+                # 如果没有复权因子数据，则添加默认值
+                df['adj_factor'] = 1.0
+
+            # 重命名adj_factor为adjust
+            df = df.rename(columns={'adj_factor': 'adjust'})
 
             # 重命名列名以符合ClickHouse表结构
             df = df.rename(columns={
                 'ts_code': 'symbol',
-                'trade_date': 'trade_date',
+                'trade_date': 'frame',
                 'up_limit': 'limit_up',
                 'down_limit': 'limit_down'
             })
 
             # 转换日期格式
-            df['trade_date'] = pd.to_datetime(df['trade_date']).dt.date
+            df['frame'] = pd.to_datetime(df['frame']).dt.date
 
             return df
 
@@ -500,36 +538,56 @@ class DataFetcher:
         try:
             # 获取涨跌停价格
             limit_df = self._call_tushare_api(
-                api_name='limit_list',
+                api_name='stk_limit',
                 params={'start_date': start_date, 'end_date': end_date},
-                fields='ts_code,trade_date,name,close,up_limit,down_limit'
+                fields='ts_code,trade_date,up_limit,down_limit'
             )
 
             # 获取ST股票信息
             namechange_df = self._call_tushare_api(
                 api_name='namechange',
-                params={'start_date': start_date, 'end_date': end_date},
+                params={},
                 fields='ts_code,name,start_date,end_date,change_reason'
             )
 
             # 处理ST信息
             st_info = {}
             if not namechange_df.empty:
-                # 筛选出ST股票
-                st_df = namechange_df[namechange_df['change_reason'].str.contains('ST', na=False)]
+                # 筛选出名称中包含ST的股票
+                st_df = namechange_df[namechange_df['name'].str.contains('ST', na=False)]
+
+                # 获取交易日历，确保只处理交易日
+                trade_cal_df = self._call_tushare_api(
+                    api_name='trade_cal',
+                    params={'start_date': start_date, 'end_date': end_date, 'is_open': 1},
+                    fields='cal_date'
+                )
+                trade_dates = trade_cal_df['cal_date'].tolist() if not trade_cal_df.empty else []
 
                 # 构建ST信息字典
                 for _, row in st_df.iterrows():
                     ts_code = row['ts_code']
-                    start = row['start_date']
-                    end = row['end_date'] if pd.notna(row['end_date']) else end_date
+                    start_date_str = row['start_date']
+                    end_date_str = row['end_date']
 
-                    # 将日期范围内的所有交易日标记为ST
-                    date_range = pd.date_range(start=start, end=end)
-                    for date in date_range:
-                        date_str = date.strftime('%Y%m%d')
-                        key = f"{ts_code}_{date_str}"
-                        st_info[key] = 1
+                    # 转换开始日期
+                    start_date_obj = datetime.datetime.strptime(start_date_str, '%Y%m%d')
+
+                    # 处理结束日期
+                    if pd.isna(end_date_str) or end_date_str is None:
+                        end_date_obj = datetime.datetime.now()
+                    else:
+                        end_date_obj = datetime.datetime.strptime(end_date_str, '%Y%m%d')
+
+                    # 检查每个交易日是否在ST日期范围内
+                    for date_str in trade_dates:
+                        target_date = datetime.datetime.strptime(date_str, '%Y%m%d')
+
+                        # 判断当前日期是否在ST日期范围内
+                        if (target_date - start_date_obj).days >= 0 and (target_date - end_date_obj).days <= 0:
+                            key = f"{ts_code}_{date_str}"
+                            st_info[key] = 1
+                            logger.debug(f"股票 {ts_code} 在 {date_str} 为ST股票")
 
             # 添加涨跌停信息
             if not limit_df.empty:
@@ -568,17 +626,45 @@ class DataFetcher:
                 df['limit_down'] = None
                 df['is_st'] = 0
 
-            # 添加复权因子（这里简化处理，实际应该从adj_factor接口获取）
-            df['adjust'] = 1.0
+            # 获取复权因子
+            adj_factor_df = self._call_tushare_api(
+                api_name='adj_factor',
+                params={'start_date': start_date, 'end_date': end_date},
+                fields='ts_code,trade_date,adj_factor'
+            )
+
+            # 添加复权因子
+            if not adj_factor_df.empty:
+                # 将复权因子信息转换为字典，方便查找
+                adj_factor_info = {}
+                for _, row in adj_factor_df.iterrows():
+                    ts_code = row['ts_code']
+                    trade_date = row['trade_date']
+                    key = f"{ts_code}_{trade_date}"
+                    adj_factor_info[key] = row['adj_factor']
+
+                # 为每条记录添加复权因子
+                df['adjust'] = 1.0  # 默认值
+                for i, row in df.iterrows():
+                    ts_code = row['ts_code']
+                    trade_date = row['trade_date']
+                    key = f"{ts_code}_{trade_date}"
+
+                    # 添加复权因子信息
+                    if key in adj_factor_info:
+                        df.at[i, 'adjust'] = adj_factor_info[key]
+            else:
+                # 如果没有复权因子数据，则添加默认值
+                df['adjust'] = 1.0
 
             # 重命名列名以符合ClickHouse表结构
             df = df.rename(columns={
                 'ts_code': 'symbol',
-                'trade_date': 'trade_date'
+                'trade_date': 'frame'
             })
 
             # 转换日期格式
-            df['trade_date'] = pd.to_datetime(df['trade_date']).dt.date
+            df['frame'] = pd.to_datetime(df['frame']).dt.date
 
             return df
 
