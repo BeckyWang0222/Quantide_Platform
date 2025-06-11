@@ -1,0 +1,97 @@
+# 增强版数据消费系统配置文件 - Mac端
+# 基于最佳实践的高性能配置
+
+# Redis配置 - 远程数据源
+redis:
+  host: 8.217.201.221          # Redis服务器地址
+  port: 16379                  # Redis端口
+  password: quantide666        # Redis认证密码
+  db: 0                        # Redis数据库编号
+  decode_responses: true       # 自动解码响应
+
+# ClickHouse配置 - 本地数据存储
+clickhouse:
+  host: localhost              # ClickHouse服务器地址
+  port: 9000                   # ClickHouse端口
+  user: default                # 用户名
+  password: ""                 # 密码
+  database: default            # 数据库名
+
+# 数据处理配置
+data:
+  # 数据质量控制
+  quality_check: true          # 是否启用数据质量检查
+  min_quality_score: 0.5       # 最低质量分数阈值
+  
+  # 数据保留策略
+  retention_days: 30           # 数据保留天数
+  
+  # 数据验证规则
+  validation:
+    check_price_logic: true    # 检查价格逻辑
+    check_volume_logic: true   # 检查成交量逻辑
+    check_time_format: true    # 检查时间格式
+
+# 系统性能配置
+system:
+  # 批量处理配置
+  batch_size: 1000             # 批量处理大小
+  batch_timeout: 5.0           # 批量处理超时时间(秒)
+  
+  # 并发配置
+  worker_count: 4              # 工作线程数
+  max_queue_size: 20000        # 最大队列大小
+  
+  # 重试配置
+  max_retry_times: 3           # 最大重试次数
+  retry_delay: 1               # 重试延迟(秒)
+  
+  # 日志配置
+  log_level: "INFO"            # 日志级别: DEBUG, INFO, WARNING, ERROR
+  
+  # 监控配置
+  performance_report_interval: 60    # 性能报告间隔(秒)
+  resource_check_interval: 30        # 资源检查间隔(秒)
+  
+  # 资源限制
+  max_memory_mb: 2000          # 最大内存使用(MB)
+  max_cpu_percent: 80          # 最大CPU使用率(%)
+
+# ClickHouse表配置
+tables:
+  # 主表配置
+  minute_bars_enhanced:
+    partition_by: "toYYYYMM(frame)"    # 分区策略
+    order_by: "(symbol, frame)"        # 排序键
+    index_granularity: 8192            # 索引粒度
+    
+  # 聚合表配置
+  aggregation_tables:
+    - name: "minute_bars_5min_enhanced"
+      interval: "5 MINUTE"
+      enabled: true
+    - name: "minute_bars_30min_enhanced"
+      interval: "30 MINUTE"
+      enabled: true
+    - name: "minute_bars_1hour_enhanced"
+      interval: "1 HOUR"
+      enabled: false
+
+# 高级配置
+advanced:
+  # 网络配置
+  connection_pool_size: 20      # Redis连接池大小
+  socket_timeout: 10           # 网络超时时间(秒)
+  
+  # 数据压缩
+  enable_compression: false     # 是否启用数据压缩
+  compression_method: "lz4"     # 压缩方法: lz4, gzip
+  
+  # 性能优化
+  use_numpy: true              # 使用NumPy优化
+  enable_parallel_insert: true # 启用并行插入
+  
+  # 调试配置
+  debug_mode: false            # 调试模式
+  profile_performance: false   # 性能分析模式
+  save_failed_data: true      # 保存失败的数据用于调试

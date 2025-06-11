@@ -1,0 +1,74 @@
+# QMT增强版数据订阅系统配置文件
+# 基于最佳实践的高性能配置
+
+# Redis配置 - 远程数据传输
+redis:
+  host: 8.217.201.221          # Redis服务器地址
+  port: 16379                  # Redis端口
+  password: quantide666        # Redis认证密码
+  db: 0                        # Redis数据库编号
+  decode_responses: true       # 自动解码响应
+
+# QMT配置 - 数据订阅设置
+qmt:
+  # 订阅模式选择
+  subscription_mode: "whole_quote"    # 可选: "whole_quote"(全推行情) 或 "individual"(单股订阅)
+  
+  # 股票列表配置
+  stock_list_mode: "all"              # 可选: "all"(全市场), "file"(文件), "config"(配置)
+  max_subscribe_count: 1000           # 最大订阅数量限制
+  
+  # 数据缓存配置
+  cache_size: 100                     # 每只股票缓存的数据条数
+  
+  # 数据质量控制
+  quality_check: true                 # 是否启用数据质量检查
+  price_change_threshold: 0.2         # 价格变动阈值 (20%)
+  validate_stocks: false              # 是否验证股票代码有效性（较慢）
+  
+  # 股票代码过滤规则
+  filters:
+    exclude_st: false                 # 是否排除ST股票
+    exclude_suspended: true           # 是否排除停牌股票
+    min_market_cap: 0                # 最小市值过滤 (亿元)
+
+# 系统性能配置
+system:
+  # 批量处理配置
+  batch_size: 100                     # 批量处理大小
+  batch_timeout: 1.0                  # 批量处理超时时间(秒)
+  
+  # 重试配置
+  max_retry_times: 3                  # 最大重试次数
+  retry_delay: 1                      # 重试延迟(秒)
+  
+  # 日志配置
+  log_level: "INFO"                   # 日志级别: DEBUG, INFO, WARNING, ERROR
+  
+  # 监控配置
+  performance_report_interval: 60     # 性能报告间隔(秒)
+  resource_check_interval: 30         # 资源检查间隔(秒)
+  
+  # 队列配置
+  max_queue_size: 10000              # 最大队列大小
+  
+  # 资源限制
+  max_memory_mb: 1000                # 最大内存使用(MB)
+  max_cpu_percent: 80                # 最大CPU使用率(%)
+
+# 高级配置
+advanced:
+  # 网络配置
+  connection_pool_size: 20            # Redis连接池大小
+  socket_timeout: 5                   # 网络超时时间(秒)
+  
+  # 数据存储配置
+  data_retention_days: 7              # 数据保留天数
+  
+  # 性能优化
+  enable_compression: false           # 是否启用数据压缩
+  use_binary_protocol: false          # 是否使用二进制协议
+  
+  # 调试配置
+  debug_mode: false                   # 调试模式
+  profile_performance: false          # 性能分析模式
