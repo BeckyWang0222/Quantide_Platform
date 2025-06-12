@@ -1,0 +1,43 @@
+# Mac端配置文件
+# 远程Redis配置
+redis:
+  host: 8.217.201.221
+  port: 16379
+  password: quantide666  # Redis认证密码
+  db: 0
+  decode_responses: true
+
+# 本地ClickHouse配置
+clickhouse:
+  host: localhost
+  port: 9000
+  database: market_data
+  user: default
+  password: ""
+
+# Web服务配置
+web:
+  host: 0.0.0.0
+  port: 5000
+  debug: true
+  template_folder: templates
+  static_folder: static
+
+# 系统配置
+system:
+  batch_size: 1000
+  consumer_threads: 4
+  max_retry_times: 3
+  log_level: INFO
+
+# 日志配置
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "mac_system.log"
+  max_bytes: 10485760  # 10MB
+  backup_count: 5
+
+# 数据库初始化SQL
+database:
+  init_sql_file: "init_clickhouse.sql"

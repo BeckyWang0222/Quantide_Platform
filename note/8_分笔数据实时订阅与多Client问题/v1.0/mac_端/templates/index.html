@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票数据可视化查询系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.0/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .error-message {
+            color: #dc3545;
+            margin-top: 10px;
+        }
+        .success-message {
+            color: #28a745;
+            margin-top: 10px;
+        }
+        .stats-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- 标题栏 -->
+        <div class="row mt-3">
+            <div class="col-12">
+                <h1 class="text-center">股票数据可视化查询系统</h1>
+                <p class="text-center text-muted">基于QMT + Redis + ClickHouse的跨平台数据处理系统</p>
+            </div>
+        </div>
+
+        <!-- 查询控制面板 -->
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-search"></i> 股票数据查询</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-2">
+                                <label class="form-label">股票代码:</label>
+                                <div class="input-group">
+                                    <input type="text" id="symbol" class="form-control" placeholder="输入股票代码" value="000001.SZ">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="searchSymbols()">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                </div>
+                                <div id="symbol_suggestions" class="dropdown-menu" style="display: none; position: absolute; z-index: 1000;"></div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">开始日期:</label>
+                                <input type="date" id="start_date" class="form-control">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">结束日期:</label>
+                                <input type="date" id="end_date" class="form-control">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">时间周期:</label>
+                                <select id="period" class="form-control">
+                                    <option value="1min">1分钟</option>
+                                    <option value="5min">5分钟</option>
+                                    <option value="30min">30分钟</option>
+                                    <option value="daily">日线</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">&nbsp;</label>
+                                <button class="btn btn-primary form-control" onclick="queryData()">
+                                    <i class="bi bi-search"></i> 查询
+                                </button>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">&nbsp;</label>
+                                <button class="btn btn-success form-control" onclick="getRealTimeData()">
+                                    <i class="bi bi-lightning"></i> 实时数据
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-3">
+                                <button class="btn btn-info btn-sm" onclick="validateSymbol()">验证代码</button>
+                                <button class="btn btn-secondary btn-sm" onclick="loadAvailableSymbols()">可用代码</button>
+                            </div>
+                            <div class="col-md-9">
+                                <div id="message" class="message"></div>
+                                <div id="loading" class="loading">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">加载中...</span>
+                                    </div>
+                                    <p>正在查询数据，请稍候...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图表展示区域 -->
+        <div class="row mt-3">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-graph-up"></i> K线图</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="kline_chart" style="height: 500px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-bar-chart"></i> 成交量</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="volume_chart" style="height: 240px;"></div>
+                    </div>
+                </div>
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5><i class="bi bi-info-circle"></i> 实时信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="realtime_info">
+                            <p class="text-muted">请选择股票代码查询实时数据</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 可用股票代码 -->
+        <div class="row mt-3" id="available_symbols_section" style="display: none;">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-list-ul"></i> 可用股票代码</h5>
+                        <button class="btn btn-sm btn-outline-danger float-end" onclick="hideAvailableSymbols()">隐藏</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="available_symbols_list" class="row">
+                            <div class="col-md-12">
+                                <p class="text-muted">正在加载可用股票代码...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 系统统计信息 -->
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-graph-up-arrow"></i> 系统统计</h5>
+                        <button class="btn btn-sm btn-outline-primary float-end" onclick="loadStatistics()">刷新统计</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="statistics_info" class="row">
+                            <div class="col-md-12">
+                                <p class="text-muted">点击"刷新统计"查看系统数据统计信息</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化图表
+        let klineChart = echarts.init(document.getElementById('kline_chart'));
+        let volumeChart = echarts.init(document.getElementById('volume_chart'));
+
+        // 显示消息
+        function showMessage(message, type = 'info') {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = `message ${type}-message`;
+            messageDiv.textContent = message;
+            setTimeout(() => {
+                messageDiv.textContent = '';
+                messageDiv.className = 'message';
+            }, 5000);
+        }
+
+        // 显示/隐藏加载状态
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        // 查询数据函数
+        async function queryData() {
+            const symbol = document.getElementById('symbol').value;
+            const startDate = document.getElementById('start_date').value;
+            const endDate = document.getElementById('end_date').value;
+            const period = document.getElementById('period').value;
+
+            if (!symbol || !startDate || !endDate) {
+                showMessage('请填写完整的查询条件', 'error');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const response = await axios.post('/api/query_data', {
+                    symbol: symbol,
+                    start_date: startDate,
+                    end_date: endDate,
+                    period: period
+                });
+
+                if (response.data.success) {
+                    updateCharts(response.data.data);
+                    showMessage(response.data.message || '查询成功', 'success');
+                } else {
+                    showMessage('查询失败: ' + response.data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('网络错误: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 获取实时数据函数
+        async function getRealTimeData() {
+            const symbol = document.getElementById('symbol').value;
+
+            if (!symbol) {
+                showMessage('请输入股票代码', 'error');
+                return;
+            }
+
+            try {
+                const response = await axios.post('/api/realtime_data', {
+                    symbol: symbol
+                });
+
+                if (response.data.success) {
+                    updateRealTimeInfo(response.data.data);
+                    showMessage('实时数据获取成功', 'success');
+                } else {
+                    showMessage('获取实时数据失败: ' + response.data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('网络错误: ' + error.message, 'error');
+            }
+        }
+
+        // 搜索股票代码
+        async function searchSymbols() {
+            const keyword = document.getElementById('symbol').value.trim();
+
+            if (!keyword) {
+                showMessage('请输入搜索关键词', 'error');
+                return;
+            }
+
+            try {
+                const response = await axios.post('/api/search_symbols', {
+                    keyword: keyword
+                });
+
+                if (response.data.success) {
+                    showSymbolSuggestions(response.data.data);
+                    showMessage(`找到${response.data.data.length}个匹配的股票代码`, 'success');
+                } else {
+                    showMessage('搜索失败: ' + response.data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('网络错误: ' + error.message, 'error');
+            }
+        }
+
+        // 显示股票代码建议
+        function showSymbolSuggestions(symbols) {
+            const suggestionsDiv = document.getElementById('symbol_suggestions');
+
+            if (symbols.length === 0) {
+                suggestionsDiv.style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            symbols.slice(0, 10).forEach(symbol => {
+                html += `<a class="dropdown-item" href="#" onclick="selectSymbol('${symbol}')">${symbol}</a>`;
+            });
+
+            suggestionsDiv.innerHTML = html;
+            suggestionsDiv.style.display = 'block';
+        }
+
+        // 选择股票代码
+        function selectSymbol(symbol) {
+            document.getElementById('symbol').value = symbol;
+            document.getElementById('symbol_suggestions').style.display = 'none';
+        }
+
+        // 验证股票代码
+        async function validateSymbol() {
+            const symbol = document.getElementById('symbol').value.trim();
+
+            if (!symbol) {
+                showMessage('请输入股票代码', 'error');
+                return;
+            }
+
+            try {
+                const response = await axios.post('/api/validate_symbol', {
+                    symbol: symbol
+                });
+
+                if (response.data.success) {
+                    const data = response.data.data;
+                    const messageType = data.is_valid ? 'success' : 'error';
+                    showMessage(`${data.symbol}: ${data.message}`, messageType);
+                } else {
+                    showMessage('验证失败: ' + response.data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('网络错误: ' + error.message, 'error');
+            }
+        }
+
+        // 加载可用股票代码
+        async function loadAvailableSymbols() {
+            try {
+                showLoading(true);
+                const response = await axios.get('/api/available_symbols');
+
+                if (response.data.success) {
+                    displayAvailableSymbols(response.data.data, response.data.count);
+                    showMessage(`加载了${response.data.count}个可用股票代码`, 'success');
+                } else {
+                    showMessage('加载失败: ' + response.data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('网络错误: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 显示可用股票代码
+        function displayAvailableSymbols(symbols, count) {
+            const listDiv = document.getElementById('available_symbols_list');
+            const sectionDiv = document.getElementById('available_symbols_section');
+
+            let html = `<div class="col-12 mb-3"><h6>共找到 ${count} 个可用股票代码：</h6></div>`;
+
+            // 分列显示股票代码
+            const columns = 6;
+            const itemsPerColumn = Math.ceil(symbols.length / columns);
+
+            for (let col = 0; col < columns; col++) {
+                html += '<div class="col-md-2"><ul class="list-unstyled">';
+
+                const start = col * itemsPerColumn;
+                const end = Math.min(start + itemsPerColumn, symbols.length);
+
+                for (let i = start; i < end; i++) {
+                    const symbol = symbols[i];
+                    html += `<li><a href="#" onclick="selectSymbol('${symbol}')" class="text-decoration-none">${symbol}</a></li>`;
+                }
+
+                html += '</ul></div>';
+            }
+
+            listDiv.innerHTML = html;
+            sectionDiv.style.display = 'block';
+        }
+
+        // 隐藏可用股票代码
+        function hideAvailableSymbols() {
+            document.getElementById('available_symbols_section').style.display = 'none';
+        }
+
+        // 加载统计信息
+        async function loadStatistics() {
+            try {
+                const response = await axios.get('/api/statistics');
+
+                if (response.data.success) {
+                    updateStatistics(response.data.data);
+                    showMessage('统计信息刷新成功', 'success');
+                } else {
+                    showMessage('获取统计信息失败: ' + response.data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('网络错误: ' + error.message, 'error');
+            }
+        }
+
+        // 更新图表
+        function updateCharts(data) {
+            // K线图配置
+            const klineOption = {
+                title: {
+                    text: 'K线图',
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'cross'
+                    },
+                    formatter: function (params) {
+                        const data = params[0].data;
+                        return `时间: ${params[0].axisValue}<br/>
+                                开盘: ${data[0]}<br/>
+                                收盘: ${data[1]}<br/>
+                                最低: ${data[2]}<br/>
+                                最高: ${data[3]}`;
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    data: data.dates,
+                    scale: true,
+                    boundaryGap: false,
+                    axisLine: {onZero: false},
+                    splitLine: {show: false},
+                    splitNumber: 20,
+                    min: 'dataMin',
+                    max: 'dataMax'
+                },
+                yAxis: {
+                    scale: true,
+                    splitArea: {
+                        show: true
+                    }
+                },
+                dataZoom: [
+                    {
+                        type: 'inside',
+                        start: 80,
+                        end: 100
+                    },
+                    {
+                        show: true,
+                        type: 'slider',
+                        top: '90%',
+                        start: 80,
+                        end: 100
+                    }
+                ],
+                series: [
+                    {
+                        name: 'K线',
+                        type: 'candlestick',
+                        data: data.kline,
+                        itemStyle: {
+                            color: '#ec0000',
+                            color0: '#00da3c',
+                            borderColor: '#8A0000',
+                            borderColor0: '#008F28'
+                        }
+                    }
+                ]
+            };
+
+            // 成交量图配置
+            const volumeOption = {
+                title: {
+                    text: '成交量',
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function (params) {
+                        return `时间: ${params[0].axisValue}<br/>成交量: ${params[0].value}`;
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    data: data.dates,
+                    axisLabel: {
+                        show: false
+                    }
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [
+                    {
+                        name: '成交量',
+                        type: 'bar',
+                        data: data.volume,
+                        itemStyle: {
+                            color: '#3398DB'
+                        }
+                    }
+                ]
+            };
+
+            klineChart.setOption(klineOption);
+            volumeChart.setOption(volumeOption);
+        }
+
+        // 更新实时信息
+        function updateRealTimeInfo(data) {
+            const infoDiv = document.getElementById('realtime_info');
+            infoDiv.innerHTML = `
+                <div class="stats-card">
+                    <table class="table table-sm table-borderless">
+                        <tr><td><strong>股票代码:</strong></td><td>${data.symbol}</td></tr>
+                        <tr><td><strong>最新价格:</strong></td><td class="text-primary fs-5">${data.price}</td></tr>
+                        <tr><td><strong>成交量:</strong></td><td>${data.volume}</td></tr>
+                        <tr><td><strong>成交额:</strong></td><td>${data.amount}</td></tr>
+                        <tr><td><strong>更新时间:</strong></td><td>${data.timestamp}</td></tr>
+                    </table>
+                </div>
+            `;
+        }
+
+        // 更新统计信息
+        function updateStatistics(data) {
+            const statsDiv = document.getElementById('statistics_info');
+            let html = '';
+
+            if (data.minute_bars) {
+                html += `
+                    <div class="col-md-6">
+                        <div class="stats-card">
+                            <h6>分钟线数据统计</h6>
+                            <p><strong>总记录数:</strong> ${data.minute_bars.total_count}</p>
+                            <p><strong>股票数量:</strong> ${data.minute_bars.symbol_count}</p>
+                            <p><strong>最早时间:</strong> ${data.minute_bars.earliest_time}</p>
+                            <p><strong>最新时间:</strong> ${data.minute_bars.latest_time}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (data.today_data) {
+                html += `
+                    <div class="col-md-6">
+                        <div class="stats-card">
+                            <h6>今日数据统计</h6>
+                `;
+
+                const sortedData = Object.entries(data.today_data)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5);
+
+                for (const [symbol, count] of sortedData) {
+                    html += `<p><strong>${symbol}:</strong> ${count}条</p>`;
+                }
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+
+            statsDiv.innerHTML = html || '<div class="col-12"><p class="text-muted">暂无统计数据</p></div>';
+        }
+
+        // 页面加载完成后设置默认值
+        window.onload = function() {
+            const today = new Date();
+            const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+            document.getElementById('start_date').value = lastWeek.toISOString().split('T')[0];
+            document.getElementById('end_date').value = today.toISOString().split('T')[0];
+
+            // 窗口大小改变时重新调整图表
+            window.addEventListener('resize', function() {
+                klineChart.resize();
+                volumeChart.resize();
+            });
+
+            // 点击页面其他地方隐藏建议框
+            document.addEventListener('click', function(event) {
+                const suggestionsDiv = document.getElementById('symbol_suggestions');
+                const symbolInput = document.getElementById('symbol');
+
+                if (!symbolInput.contains(event.target) && !suggestionsDiv.contains(event.target)) {
+                    suggestionsDiv.style.display = 'none';
+                }
+            });
+
+            // 股票代码输入框回车搜索
+            document.getElementById('symbol').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    searchSymbols();
+                }
+            });
+        };
+    </script>
+</body>
+</html>

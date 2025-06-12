@@ -1,0 +1,60 @@
+# Windows端配置文件
+# 远程Redis配置
+redis:
+  host: 8.217.201.221
+  port: 16379
+  password: quantide666  # Redis认证密码
+  db: 0
+  decode_responses: true
+
+# QMT配置
+qmt:
+  # 注意：QMT通过xtquant库直接连接，无需配置data_path
+  stock_list_mode: "all"  # 可选: "all"(全市场), "file"(从文件读取), "config"(从配置读取)
+  stock_list_file: "stock_list.txt"  # 当mode为"file"时使用
+
+  # 市场配置 - 当mode为"all"时使用
+  markets:
+    - "SZ"    # 深圳市场
+    - "SH"    # 上海市场
+
+  # 股票类型过滤
+  stock_types:
+    - "stock"     # 股票
+    - "index"     # 指数
+    # - "fund"    # 基金 (可选)
+    # - "bond"    # 债券 (可选)
+
+  # 手动指定股票列表 - 当mode为"config"时使用
+  manual_stock_list:
+    - "000001.SZ"
+    - "000002.SZ"
+    - "600519.SH"
+    - "000858.SZ"
+    - "002415.SZ"
+    - "300750.SZ"
+
+  # 订阅限制 (防止订阅过多股票导致性能问题)
+  max_subscribe_count: 1000  # 最大订阅数量，0表示无限制
+  validate_stocks: false    # 是否验证股票代码有效性（会比较慢）
+
+  # 股票代码过滤规则
+  filters:
+    exclude_st: false        # 是否排除ST股票
+    exclude_suspended: true  # 是否排除停牌股票
+    min_market_cap: 0       # 最小市值过滤 (亿元)，0表示不过滤
+
+# 系统配置
+system:
+  batch_size: 100
+  max_retry_times: 3
+  log_level: INFO
+  publish_interval: 1  # 发布间隔(秒)
+
+# 日志配置
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "qmt_subscriber.log"
+  max_bytes: 10485760  # 10MB
+  backup_count: 5

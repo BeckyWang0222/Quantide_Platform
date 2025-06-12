@@ -1,0 +1,4 @@
+# Windows端依赖包
+redis==4.5.4
+PyYAML==6.0
+xtquant>=1.0.0  # QMT量化交易接口
