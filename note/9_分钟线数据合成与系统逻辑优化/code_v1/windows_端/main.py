@@ -218,96 +218,365 @@ async def get_dashboard():
     """获取仪表板页面"""
     return """
     <!DOCTYPE html>
-    <html>
+    <html lang="zh-CN">
     <head>
-        <title>Windows端数据生产服务</title>
+        <title>Windows端数据生产服务 - 量化交易系统</title>
         <meta charset="utf-8">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <style>
+            :root {
+                --primary-color: #2563eb;
+                --success-color: #059669;
+                --warning-color: #d97706;
+                --danger-color: #dc2626;
+                --info-color: #0891b2;
+                --dark-color: #1f2937;
+                --light-bg: #f8fafc;
+                --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }
+
+            body {
+                background-color: var(--light-bg);
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            .navbar {
+                background: linear-gradient(135deg, var(--primary-color), var(--info-color));
+                box-shadow: var(--card-shadow);
+            }
+
+            .card {
+                border: none;
+                border-radius: 12px;
+                box-shadow: var(--card-shadow);
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+                background: white;
+            }
+
+            .card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+            }
+
+            .card-header {
+                background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+                border-bottom: 2px solid var(--primary-color);
+                border-radius: 12px 12px 0 0 !important;
+                padding: 1rem 1.5rem;
+            }
+
+            .card-header h5 {
+                margin: 0;
+                color: var(--dark-color);
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .status-badge {
+                font-size: 0.875rem;
+                padding: 0.5rem 1rem;
+                border-radius: 50px;
+                font-weight: 500;
+            }
+
+            .metric-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.75rem 0;
+                border-bottom: 1px solid #e5e7eb;
+            }
+
+            .metric-item:last-child {
+                border-bottom: none;
+            }
+
+            .metric-label {
+                color: #6b7280;
+                font-weight: 500;
+            }
+
+            .metric-value {
+                color: var(--dark-color);
+                font-weight: 600;
+            }
+
+            .form-control, .form-select {
+                border-radius: 8px;
+                border: 2px solid #e5e7eb;
+                transition: border-color 0.2s ease;
+            }
+
+            .form-control:focus, .form-select:focus {
+                border-color: var(--primary-color);
+                box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+            }
+
+            .btn {
+                border-radius: 8px;
+                font-weight: 500;
+                padding: 0.75rem 1.5rem;
+                transition: all 0.2s ease;
+            }
+
+            .btn-primary {
+                background: linear-gradient(135deg, var(--primary-color), var(--info-color));
+                border: none;
+            }
+
+            .btn-primary:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+            }
+
+            .checkbox-group {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 1rem;
+                padding: 1rem;
+                background: #f8fafc;
+                border-radius: 8px;
+                border: 2px solid #e5e7eb;
+            }
+
+            .checkbox-item {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .checkbox-item input[type="checkbox"] {
+                width: 1.2rem;
+                height: 1.2rem;
+                accent-color: var(--primary-color);
+            }
+
+            .loading-spinner {
+                display: inline-block;
+                width: 1rem;
+                height: 1rem;
+                border: 2px solid #e5e7eb;
+                border-radius: 50%;
+                border-top-color: var(--primary-color);
+                animation: spin 1s ease-in-out infinite;
+            }
+
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+
+            .alert {
+                border-radius: 8px;
+                border: none;
+            }
+
+            .table {
+                border-radius: 8px;
+                overflow: hidden;
+            }
+
+            .table thead th {
+                background: var(--primary-color);
+                color: white;
+                border: none;
+                font-weight: 600;
+            }
+
+            .progress {
+                height: 8px;
+                border-radius: 4px;
+                background: #e5e7eb;
+            }
+
+            .progress-bar {
+                border-radius: 4px;
+            }
+        </style>
     </head>
     <body>
-        <div class="container mt-4">
-            <h1>Windows端数据生产服务</h1>
-            <div class="row">
-                <div class="col-md-6">
+        <!-- 导航栏 -->
+        <nav class="navbar navbar-dark">
+            <div class="container">
+                <span class="navbar-brand mb-0 h1">
+                    <i class="bi bi-pc-display"></i>
+                    Windows端数据生产服务
+                </span>
+                <span class="navbar-text">
+                    <i class="bi bi-clock"></i>
+                    <span id="current-time"></span>
+                </span>
+            </div>
+        </nav>
+
+            <!-- 系统概览 -->
+            <div class="row mb-4">
+                <div class="col-12">
                     <div class="card">
                         <div class="card-header">
-                            <h5>服务状态</h5>
+                            <h5><i class="bi bi-speedometer2"></i> 系统概览</h5>
                         </div>
-                        <div class="card-body" id="service-status">
-                            加载中...
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>Redis队列状态</h5>
-                        </div>
-                        <div class="card-body" id="redis-status">
-                            加载中...
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-md-3">
+                                    <div class="metric-card">
+                                        <i class="bi bi-play-circle text-success" style="font-size: 2rem;"></i>
+                                        <h6 class="mt-2">服务状态</h6>
+                                        <span id="service-status-badge" class="status-badge bg-secondary">加载中</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-card">
+                                        <i class="bi bi-clock text-info" style="font-size: 2rem;"></i>
+                                        <h6 class="mt-2">交易时间</h6>
+                                        <span id="trading-time-badge" class="status-badge bg-secondary">检查中</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-card">
+                                        <i class="bi bi-database text-warning" style="font-size: 2rem;"></i>
+                                        <h6 class="mt-2">数据计数</h6>
+                                        <span id="data-count" class="metric-value">0</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-card">
+                                        <i class="bi bi-arrow-clockwise text-primary" style="font-size: 2rem;"></i>
+                                        <h6 class="mt-2">最后更新</h6>
+                                        <span id="last-update" class="metric-value">--</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="row mt-4">
-                <div class="col-md-6">
-                    <div class="card">
+
+            <!-- 详细状态 -->
+            <div class="row mb-4">
+                <div class="col-lg-6">
+                    <div class="card h-100">
                         <div class="card-header">
-                            <h5>数据缓存状态</h5>
+                            <h5><i class="bi bi-gear"></i> 服务详细状态</h5>
                         </div>
-                        <div class="card-body" id="cache-status">
-                            加载中...
+                        <div class="card-body" id="service-status">
+                            <div class="text-center">
+                                <div class="loading-spinner"></div>
+                                <p class="mt-2 text-muted">加载中...</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="card">
+                <div class="col-lg-6">
+                    <div class="card h-100">
                         <div class="card-header">
-                            <h5>历史数据获取</h5>
+                            <h5><i class="bi bi-hdd-network"></i> Redis队列状态</h5>
+                        </div>
+                        <div class="card-body" id="redis-status">
+                            <div class="text-center">
+                                <div class="loading-spinner"></div>
+                                <p class="mt-2 text-muted">加载中...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5><i class="bi bi-memory"></i> 数据缓存状态</h5>
+                        </div>
+                        <div class="card-body" id="cache-status">
+                            <div class="text-center">
+                                <div class="loading-spinner"></div>
+                                <p class="mt-2 text-muted">加载中...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5><i class="bi bi-download"></i> 历史数据获取</h5>
                         </div>
                         <div class="card-body">
                             <form id="historicalForm">
-                                <div class="mb-3">
-                                    <label for="startTime" class="form-label">开始时间</label>
-                                    <input type="datetime-local" class="form-control" id="startTime" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="endTime" class="form-label">结束时间</label>
-                                    <input type="datetime-local" class="form-control" id="endTime" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="symbols" class="form-label">股票代码（可选，多个用逗号分隔）</label>
-                                    <input type="text" class="form-control" id="symbols" placeholder="000001.SZ,600000.SH">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">周期选择</label>
-                                    <div>
-                                        <input type="checkbox" id="period1" value="1" checked>
-                                        <label for="period1">1分钟</label>
-                                        <input type="checkbox" id="period5" value="5" checked>
-                                        <label for="period5">5分钟</label>
-                                        <input type="checkbox" id="period15" value="15" checked>
-                                        <label for="period15">15分钟</label>
-                                        <input type="checkbox" id="period30" value="30" checked>
-                                        <label for="period30">30分钟</label>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="startTime" class="form-label">
+                                                <i class="bi bi-calendar-event"></i> 开始时间
+                                            </label>
+                                            <input type="datetime-local" class="form-control" id="startTime" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="endTime" class="form-label">
+                                                <i class="bi bi-calendar-check"></i> 结束时间
+                                            </label>
+                                            <input type="datetime-local" class="form-control" id="endTime" required>
+                                        </div>
                                     </div>
                                 </div>
-                                <button type="submit" class="btn btn-primary">开始获取</button>
+                                <div class="mb-3">
+                                    <label for="symbols" class="form-label">
+                                        <i class="bi bi-list-ul"></i> 股票代码（可选，多个用逗号分隔）
+                                    </label>
+                                    <input type="text" class="form-control" id="symbols"
+                                           placeholder="例如：000001.SZ,600000.SH">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        <i class="bi bi-clock-history"></i> 周期选择
+                                    </label>
+                                    <div class="checkbox-group">
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="period1" value="1" checked>
+                                            <label for="period1">1分钟</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="period5" value="5" checked>
+                                            <label for="period5">5分钟</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="period15" value="15" checked>
+                                            <label for="period15">15分钟</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="period30" value="30" checked>
+                                            <label for="period30">30分钟</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-play-fill"></i> 开始获取历史数据
+                                </button>
                             </form>
                             <div id="taskStatus" class="mt-3" style="display: none;"></div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="row mt-4">
+
+            <!-- 任务状态 -->
+            <div class="row">
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
-                            <h5>历史数据获取任务</h5>
+                            <h5><i class="bi bi-list-task"></i> 历史数据获取任务</h5>
                         </div>
                         <div class="card-body" id="tasks-status">
-                            暂无任务
+                            <div class="text-center text-muted">
+                                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                                <p class="mt-2">暂无任务</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -317,45 +586,178 @@ async def get_dashboard():
         <script>
             let currentTaskId = null;
 
+            // 更新当前时间
+            function updateCurrentTime() {
+                const now = new Date();
+                document.getElementById('current-time').textContent = now.toLocaleString('zh-CN');
+            }
+
             function updateStatus() {
                 fetch('/api/status')
                     .then(response => response.json())
                     .then(data => {
-                        // 更新服务状态
-                        const serviceStatus = document.getElementById('service-status');
                         const status = data.service_status;
-                        serviceStatus.innerHTML = `
-                            <p><strong>状态:</strong> <span class="badge bg-${status.status === 'running' ? 'success' : 'danger'}">${status.status}</span></p>
-                            <p><strong>消息:</strong> ${status.message}</p>
-                            <p><strong>数据计数:</strong> ${status.data_count}</p>
-                            <p><strong>最后更新:</strong> ${status.last_update}</p>
-                            <p><strong>交易时间:</strong> <span class="badge bg-${data.is_trading_time ? 'success' : 'secondary'}">${data.is_trading_time ? '是' : '否'}</span></p>
-                        `;
+
+                        // 更新概览卡片
+                        updateOverviewCards(status, data);
+
+                        // 更新详细服务状态
+                        updateServiceStatus(status);
 
                         // 更新Redis状态
-                        const redisStatus = document.getElementById('redis-status');
-                        let redisHtml = '';
-                        for (const [key, value] of Object.entries(data.redis_info)) {
-                            redisHtml += `<p><strong>${key}:</strong> ${value}</p>`;
-                        }
-                        redisStatus.innerHTML = redisHtml;
+                        updateRedisStatus(data.redis_info);
 
                         // 更新缓存状态
-                        const cacheStatus = document.getElementById('cache-status');
-                        let cacheHtml = '';
-                        for (const [key, value] of Object.entries(data.cache_info)) {
-                            if (key.includes('filter_rate')) {
-                                const percentage = (value * 100).toFixed(2);
-                                cacheHtml += `<p><strong>${key}:</strong> ${percentage}%</p>`;
-                            } else {
-                                cacheHtml += `<p><strong>${key}:</strong> ${value}</p>`;
-                            }
-                        }
-                        cacheStatus.innerHTML = cacheHtml;
+                        updateCacheStatus(data.cache_info);
                     })
                     .catch(error => {
                         console.error('Error:', error);
+                        showErrorState();
                     });
+            }
+
+            function updateOverviewCards(status, data) {
+                // 服务状态徽章
+                const statusBadge = document.getElementById('service-status-badge');
+                statusBadge.className = `status-badge bg-${status.status === 'running' ? 'success' : 'danger'}`;
+                statusBadge.textContent = status.status === 'running' ? '运行中' : '已停止';
+
+                // 交易时间徽章
+                const tradingBadge = document.getElementById('trading-time-badge');
+                tradingBadge.className = `status-badge bg-${data.is_trading_time ? 'success' : 'secondary'}`;
+                tradingBadge.textContent = data.is_trading_time ? '交易时间' : '非交易时间';
+
+                // 数据计数
+                document.getElementById('data-count').textContent = status.data_count || 0;
+
+                // 最后更新时间
+                const lastUpdate = new Date(status.last_update).toLocaleString('zh-CN');
+                document.getElementById('last-update').textContent = lastUpdate;
+            }
+
+            function updateServiceStatus(status) {
+                const serviceStatus = document.getElementById('service-status');
+                serviceStatus.innerHTML = `
+                    <div class="metric-item">
+                        <span class="metric-label">运行状态</span>
+                        <span class="badge bg-${status.status === 'running' ? 'success' : 'danger'}">
+                            <i class="bi bi-${status.status === 'running' ? 'check-circle' : 'x-circle'}"></i>
+                            ${status.status === 'running' ? '运行中' : '已停止'}
+                        </span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">状态消息</span>
+                        <span class="metric-value">${status.message}</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">处理数据量</span>
+                        <span class="metric-value">
+                            <i class="bi bi-graph-up"></i> ${status.data_count || 0} 条
+                        </span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">最后更新</span>
+                        <span class="metric-value">${new Date(status.last_update).toLocaleString('zh-CN')}</span>
+                    </div>
+                `;
+            }
+
+            function updateRedisStatus(redisInfo) {
+                const redisStatus = document.getElementById('redis-status');
+                let html = '';
+
+                for (const [key, value] of Object.entries(redisInfo)) {
+                    const icon = getRedisIcon(key);
+                    html += `
+                        <div class="metric-item">
+                            <span class="metric-label">
+                                <i class="bi bi-${icon}"></i> ${formatRedisKey(key)}
+                            </span>
+                            <span class="metric-value">${value}</span>
+                        </div>
+                    `;
+                }
+
+                redisStatus.innerHTML = html || '<p class="text-muted">暂无数据</p>';
+            }
+
+            function updateCacheStatus(cacheInfo) {
+                const cacheStatus = document.getElementById('cache-status');
+                let html = '';
+
+                for (const [key, value] of Object.entries(cacheInfo)) {
+                    const icon = getCacheIcon(key);
+                    let displayValue = value;
+
+                    if (key.includes('filter_rate')) {
+                        displayValue = `${(value * 100).toFixed(2)}%`;
+                    }
+
+                    html += `
+                        <div class="metric-item">
+                            <span class="metric-label">
+                                <i class="bi bi-${icon}"></i> ${formatCacheKey(key)}
+                            </span>
+                            <span class="metric-value">${displayValue}</span>
+                        </div>
+                    `;
+                }
+
+                cacheStatus.innerHTML = html || '<p class="text-muted">暂无数据</p>';
+            }
+
+            function getRedisIcon(key) {
+                if (key.includes('queue')) return 'list-ul';
+                if (key.includes('data')) return 'database';
+                return 'hdd-network';
+            }
+
+            function getCacheIcon(key) {
+                if (key.includes('tick')) return 'clock';
+                if (key.includes('bar')) return 'bar-chart';
+                if (key.includes('rate')) return 'percent';
+                return 'memory';
+            }
+
+            function formatRedisKey(key) {
+                const keyMap = {
+                    'whole_quote_data': '分笔数据队列',
+                    'bar_data_1min': '1分钟线队列',
+                    'bar_data_5min': '5分钟线队列',
+                    'bar_data_15min': '15分钟线队列',
+                    'bar_data_30min': '30分钟线队列'
+                };
+                return keyMap[key] || key;
+            }
+
+            function formatCacheKey(key) {
+                const keyMap = {
+                    'tick_cache_symbols': 'Tick缓存股票数',
+                    'tick_cache_total': 'Tick缓存总数',
+                    'bar_1min_symbols': '1分钟线股票数',
+                    'bar_1min_total': '1分钟线总数',
+                    'bar_5min_symbols': '5分钟线股票数',
+                    'bar_5min_total': '5分钟线总数',
+                    'bar_15min_symbols': '15分钟线股票数',
+                    'bar_15min_total': '15分钟线总数',
+                    'bar_30min_symbols': '30分钟线股票数',
+                    'bar_30min_total': '30分钟线总数',
+                    'tick_filter_rate': 'Tick过滤率',
+                    'bar_filter_rate': '分钟线过滤率'
+                };
+                return keyMap[key] || key;
+            }
+
+            function showErrorState() {
+                const elements = ['service-status', 'redis-status', 'cache-status'];
+                elements.forEach(id => {
+                    document.getElementById(id).innerHTML = `
+                        <div class="text-center text-danger">
+                            <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                            <p class="mt-2">连接失败</p>
+                        </div>
+                    `;
+                });
             }
 
             function updateTasks() {
@@ -367,23 +769,72 @@ async def get_dashboard():
                             const tasks = result.data;
 
                             if (Object.keys(tasks).length === 0) {
-                                tasksStatus.innerHTML = '暂无任务';
+                                tasksStatus.innerHTML = `
+                                    <div class="text-center text-muted">
+                                        <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                                        <p class="mt-2">暂无任务</p>
+                                    </div>
+                                `;
                                 return;
                             }
 
-                            let tasksHtml = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>任务ID</th><th>状态</th><th>进度</th><th>消息</th><th>开始时间</th></tr></thead><tbody>';
+                            let tasksHtml = `
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th><i class="bi bi-hash"></i> 任务ID</th>
+                                                <th><i class="bi bi-flag"></i> 状态</th>
+                                                <th><i class="bi bi-bar-chart"></i> 进度</th>
+                                                <th><i class="bi bi-graph-up"></i> 记录数</th>
+                                                <th><i class="bi bi-chat-text"></i> 消息</th>
+                                                <th><i class="bi bi-clock"></i> 开始时间</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                            `;
 
                             for (const [taskId, taskInfo] of Object.entries(tasks)) {
                                 const progress = taskInfo.total_symbols > 0 ?
                                     Math.round((taskInfo.processed_symbols / taskInfo.total_symbols) * 100) : 0;
 
+                                const statusClass = getTaskStatusClass(taskInfo.status);
+                                const statusIcon = getTaskStatusIcon(taskInfo.status);
+
                                 tasksHtml += `
                                     <tr>
-                                        <td>${taskId.substring(0, 8)}...</td>
-                                        <td><span class="badge bg-${taskInfo.status === 'completed' ? 'success' : taskInfo.status === 'error' ? 'danger' : 'warning'}">${taskInfo.status}</span></td>
-                                        <td>${taskInfo.processed_symbols}/${taskInfo.total_symbols} (${progress}%)</td>
-                                        <td>${taskInfo.message}</td>
-                                        <td>${new Date(taskInfo.start_time).toLocaleString()}</td>
+                                        <td>
+                                            <code>${taskId.substring(0, 8)}...</code>
+                                        </td>
+                                        <td>
+                                            <span class="badge ${statusClass}">
+                                                <i class="bi bi-${statusIcon}"></i>
+                                                ${getTaskStatusText(taskInfo.status)}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress flex-grow-1 me-2" style="height: 20px;">
+                                                    <div class="progress-bar ${getProgressBarClass(taskInfo.status)}"
+                                                         style="width: ${progress}%">
+                                                        ${progress}%
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted">${taskInfo.processed_symbols}/${taskInfo.total_symbols}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">
+                                                <i class="bi bi-database"></i>
+                                                ${taskInfo.total_records || 0}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">${taskInfo.message}</small>
+                                        </td>
+                                        <td>
+                                            <small>${new Date(taskInfo.start_time).toLocaleString('zh-CN')}</small>
+                                        </td>
                                     </tr>
                                 `;
                             }
@@ -394,7 +845,53 @@ async def get_dashboard():
                     })
                     .catch(error => {
                         console.error('Error:', error);
+                        document.getElementById('tasks-status').innerHTML = `
+                            <div class="text-center text-danger">
+                                <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                                <p class="mt-2">加载任务失败</p>
+                            </div>
+                        `;
                     });
+            }
+
+            function getTaskStatusClass(status) {
+                const statusMap = {
+                    'running': 'bg-warning',
+                    'completed': 'bg-success',
+                    'error': 'bg-danger',
+                    'pending': 'bg-secondary'
+                };
+                return statusMap[status] || 'bg-secondary';
+            }
+
+            function getTaskStatusIcon(status) {
+                const iconMap = {
+                    'running': 'arrow-clockwise',
+                    'completed': 'check-circle',
+                    'error': 'x-circle',
+                    'pending': 'clock'
+                };
+                return iconMap[status] || 'question-circle';
+            }
+
+            function getTaskStatusText(status) {
+                const textMap = {
+                    'running': '运行中',
+                    'completed': '已完成',
+                    'error': '错误',
+                    'pending': '等待中'
+                };
+                return textMap[status] || status;
+            }
+
+            function getProgressBarClass(status) {
+                const classMap = {
+                    'running': 'bg-warning',
+                    'completed': 'bg-success',
+                    'error': 'bg-danger',
+                    'pending': 'bg-secondary'
+                };
+                return classMap[status] || 'bg-secondary';
             }
 
             // 历史数据获取表单提交
@@ -449,22 +946,49 @@ async def get_dashboard():
                         if (data.success) {
                             currentTaskId = data.task_id;
                             taskStatus.innerHTML = `
-                                <div class="alert alert-success">
-                                    <strong>任务已启动</strong><br>
-                                    任务ID: ${data.task_id}<br>
-                                    股票数量: ${data.total_symbols}<br>
-                                    时间范围: ${startTime} 至 ${endTime}
+                                <div class="alert alert-success border-0">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-check-circle-fill me-2" style="font-size: 1.5rem;"></i>
+                                        <div>
+                                            <h6 class="alert-heading mb-1">任务已启动</h6>
+                                            <div class="small">
+                                                <strong>任务ID:</strong> <code>${data.task_id.substring(0, 8)}...</code><br>
+                                                <strong>股票数量:</strong> ${data.total_symbols} 只<br>
+                                                <strong>时间范围:</strong> ${startTime} 至 ${endTime}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             `;
 
                             // 开始监控任务进度
                             monitorTask(data.task_id);
                         } else {
-                            taskStatus.innerHTML = `<div class="alert alert-danger">任务启动失败: ${data.message}</div>`;
+                            taskStatus.innerHTML = `
+                                <div class="alert alert-danger border-0">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-x-circle-fill me-2" style="font-size: 1.5rem;"></i>
+                                        <div>
+                                            <h6 class="alert-heading mb-1">任务启动失败</h6>
+                                            <div class="small">${data.message}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
                         }
                     })
                     .catch(error => {
-                        taskStatus.innerHTML = `<div class="alert alert-danger">请求失败: ${error.message}</div>`;
+                        taskStatus.innerHTML = `
+                            <div class="alert alert-danger border-0">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-exclamation-triangle-fill me-2" style="font-size: 1.5rem;"></i>
+                                    <div>
+                                        <h6 class="alert-heading mb-1">请求失败</h6>
+                                        <div class="small">${error.message}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
                     });
                 });
             });
@@ -484,25 +1008,66 @@ async def get_dashboard():
                                     Math.round((taskInfo.processed_symbols / taskInfo.total_symbols) * 100) : 0;
 
                                 const taskStatus = document.getElementById('taskStatus');
-                                taskStatus.innerHTML = `
-                                    <div class="alert alert-info">
-                                        <strong>任务进行中</strong><br>
-                                        状态: ${taskInfo.status}<br>
-                                        进度: ${taskInfo.processed_symbols}/${taskInfo.total_symbols} (${progress}%)<br>
-                                        记录数: ${taskInfo.total_records}<br>
-                                        消息: ${taskInfo.message}
-                                    </div>
-                                `;
 
-                                if (taskInfo.status === 'completed' || taskInfo.status === 'error') {
-                                    clearInterval(interval);
-                                    const alertClass = taskInfo.status === 'completed' ? 'alert-success' : 'alert-danger';
+                                if (taskInfo.status === 'running') {
                                     taskStatus.innerHTML = `
-                                        <div class="alert ${alertClass}">
-                                            <strong>任务${taskInfo.status === 'completed' ? '完成' : '失败'}</strong><br>
-                                            最终状态: ${taskInfo.status}<br>
-                                            处理记录: ${taskInfo.total_records}<br>
-                                            消息: ${taskInfo.message}
+                                        <div class="alert alert-info border-0">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="loading-spinner me-2"></div>
+                                                <div>
+                                                    <h6 class="alert-heading mb-1">任务进行中</h6>
+                                                    <div class="small text-muted">${taskInfo.message}</div>
+                                                </div>
+                                            </div>
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                        <span class="small">处理进度</span>
+                                                        <span class="small text-muted">${taskInfo.processed_symbols}/${taskInfo.total_symbols}</span>
+                                                    </div>
+                                                    <div class="progress" style="height: 8px;">
+                                                        <div class="progress-bar bg-info" style="width: ${progress}%"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="text-center">
+                                                        <div class="h5 mb-0">${taskInfo.total_records || 0}</div>
+                                                        <div class="small text-muted">已获取记录数</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                } else if (taskInfo.status === 'completed') {
+                                    clearInterval(interval);
+                                    taskStatus.innerHTML = `
+                                        <div class="alert alert-success border-0">
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-check-circle-fill me-2" style="font-size: 1.5rem;"></i>
+                                                <div>
+                                                    <h6 class="alert-heading mb-1">任务完成</h6>
+                                                    <div class="small">
+                                                        <strong>处理记录:</strong> ${taskInfo.total_records} 条<br>
+                                                        <strong>最终状态:</strong> ${taskInfo.message}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                } else if (taskInfo.status === 'error') {
+                                    clearInterval(interval);
+                                    taskStatus.innerHTML = `
+                                        <div class="alert alert-danger border-0">
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-x-circle-fill me-2" style="font-size: 1.5rem;"></i>
+                                                <div>
+                                                    <h6 class="alert-heading mb-1">任务失败</h6>
+                                                    <div class="small">
+                                                        <strong>错误信息:</strong> ${taskInfo.message}<br>
+                                                        <strong>处理记录:</strong> ${taskInfo.total_records || 0} 条
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     `;
                                 }
@@ -511,16 +1076,39 @@ async def get_dashboard():
                         .catch(error => {
                             console.error('监控任务失败:', error);
                             clearInterval(interval);
+                            document.getElementById('taskStatus').innerHTML = `
+                                <div class="alert alert-warning border-0">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-exclamation-triangle-fill me-2" style="font-size: 1.5rem;"></i>
+                                        <div>
+                                            <h6 class="alert-heading mb-1">监控中断</h6>
+                                            <div class="small">无法获取任务状态，请刷新页面查看</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
                         });
                 }, 2000); // 每2秒检查一次
             }
 
-            // 初始加载和定时更新
-            updateStatus();
-            updateTasks();
-            setInterval(updateStatus, 5000);
-            setInterval(updateTasks, 3000);
+            // 初始化
+            document.addEventListener('DOMContentLoaded', function() {
+                // 更新当前时间
+                updateCurrentTime();
+                setInterval(updateCurrentTime, 1000);
+
+                // 初始加载状态
+                updateStatus();
+                updateTasks();
+
+                // 定时更新
+                setInterval(updateStatus, 5000);
+                setInterval(updateTasks, 3000);
+            });
         </script>
+
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     </body>
     </html>
     """
