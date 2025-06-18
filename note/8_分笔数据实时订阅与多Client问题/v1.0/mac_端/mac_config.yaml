@@ -1,9 +1,9 @@
 # Mac端配置文件
 # 远程Redis配置
 redis:
-  host: 8.217.201.221
-  port: 16379
-  password: quantide666  # Redis认证密码
+  host: 
+  port: 
+  password: # Redis认证密码
   db: 0
   decode_responses: true
 
