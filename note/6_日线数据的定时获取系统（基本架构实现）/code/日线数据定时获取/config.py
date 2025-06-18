@@ -23,7 +23,7 @@ DEFAULT_CONFIG = {
     'redis': {
         'host': 'localhost',
         'port': 6379,
-        'password': 'quantide666',
+        'password': '',
         'db': 0,
         'decode_responses': True,
         'queue': 'day_bar_queue'
