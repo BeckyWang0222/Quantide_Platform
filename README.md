@@ -75,3 +75,18 @@ Quantide_Platform/
 
 每个系统都有独立的`README.md`文档，包含详细的安装、配置和使用说明。
 
+---
+### 本地代码地址说明
+- 日线实时订阅系统：
+    - 代码 以及 Clickhouse 存储的机器：APPLE PRO
+    - 代码路径：/Users/quantide/workspace/WBQ/quantide/日线数据定时获取
+    - 运行环境：`cd /Users/quantide/workspace/WBQ/quantide/`,`source .venv/bin/activate`就能启动 quantide 环境
+- 分钟线实时订阅系统：
+    - Windows 端
+        - Redis 的机器是 Windows （QMT）
+        - 代码路径：`C:\wbq\mycode`
+        - 监控：http://localhost:8001
+    - Mac 端
+        - Clickhouse 存储的机器：APPLE PRO
+        - 代码路径：`cd /Users/quantide/workspace/WBQ/quantide/分钟线数据实时订阅与日线采样/mac_端`
+        - 监控：http://localhost:8002
