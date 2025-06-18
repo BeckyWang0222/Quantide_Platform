@@ -5,9 +5,9 @@ from datetime import datetime
 from typing import Dict, List, Any
 
 # 配置参数
-REDIS_HOST = "8.217.201.221"
-REDIS_PORT = 16379
-REDIS_PASSWORD = "quantide666"  # 添加Redis密码
+REDIS_HOST = ""
+REDIS_PORT = 
+REDIS_PASSWORD = ""  # 添加Redis密码
 REDIS_QUEUE_NAME = "sqep_bar_day_queue"
 
 CLICKHOUSE_HOST = "localhost"
