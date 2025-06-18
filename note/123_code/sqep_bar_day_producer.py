@@ -5,10 +5,10 @@ from datetime import datetime
 from typing import List, Dict, Tuple, Any, Union
 
 # Tushare和Redis配置
-TUSHARE_TOKEN = "bd02f68c6c42a536dd9b005228af5454e175a5812380585a7d2b1ab9"
-REDIS_HOST = "8.217.201.221"
-REDIS_PORT = 16379
-REDIS_PASSWORD = "quantide666"  # 添加Redis密码
+TUSHARE_TOKEN = ""
+REDIS_HOST = ""
+REDIS_PORT = 
+REDIS_PASSWORD = ""  # 添加Redis密码
 REDIS_QUEUE_NAME = "sqep_bar_day_queue"
 
 # 初始化连接
