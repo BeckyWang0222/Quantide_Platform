@@ -5,8 +5,8 @@
 
 # Redis配置
 REDIS_CONFIG = {
-    'host': '8.217.201.221',
-    'port': 16379,
+    'host': '',
+    'port': ,
     'db': 0,
     'decode_responses': True
 }
@@ -16,7 +16,7 @@ CLICKHOUSE_CONFIG = {
     'host': 'localhost',
     'port': 8123,
     'user': 'default',
-    'password': '123456',
+    'password': '',
     'database': 'v1'
 }
 
