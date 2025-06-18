@@ -57,26 +57,21 @@ Quantide_Platform/
 │   ├── logs/                          # 日志文件目录
 │   └── tests/                         # 测试文件目录
 │
-├── 分钟线订阅系统/                     # 分钟线数据订阅系统（推文八、九）
-│   ├── README.md                      # 系统说明文档
-│   ├── config.py                      # 配置文件
-│   ├── models.py                      # 数据模型
-│   ├── data_processor.py              # 数据处理器
-│   ├── database.py                    # 数据库操作
-│   ├── trading_time_validator.py      # 交易时间验证
-│   ├── qmt_historical_fetcher.py      # QMT历史数据获取
-│   ├── start_all.py                   # 启动脚本
-│   ├── test_system.py                 # 系统测试
-│   ├── requirements.txt               # 依赖包列表
-│   ├── windows_端/                    # Windows端组件
-│   ├── mac_端/                        # Mac端组件
-│   └── client_端/                     # 客户端组件
-│
-└── temp/                              # 临时文件和测试代码
-    ├── test_tushare.py                # Tushare测试脚本
-    ├── dynamic_lego/                  # 动态乐高相关
-    └── 其他临时文件...
+└──  分钟线订阅系统/                     # 分钟线数据订阅系统（推文八、九）
+    ├── README.md                      # 系统说明文档
+    ├── config.py                      # 配置文件
+    ├── models.py                      # 数据模型
+    ├── data_processor.py              # 数据处理器
+    ├── database.py                    # 数据库操作
+    ├── trading_time_validator.py      # 交易时间验证
+    ├── qmt_historical_fetcher.py      # QMT历史数据获取
+    ├── start_all.py                   # 启动脚本
+    ├── test_system.py                 # 系统测试
+    ├── requirements.txt               # 依赖包列表
+    ├── windows_端/                    # Windows端组件
+    ├── mac_端/                        # Mac端组件
+    └── client_端/                     # 客户端组件
 ```
 
-每个系统都有独立的README.md文档，包含详细的安装、配置和使用说明。
+每个系统都有独立的`README.md`文档，包含详细的安装、配置和使用说明。
 
