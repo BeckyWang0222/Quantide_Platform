@@ -91,12 +91,8 @@ CLICKHOUSE_CONFIG = {
 
 ## 启动系统
 
-### 一键启动
-```bash
-python start_all.py
-```
+把 windows_端 放到 Windows 机器下，mac_端 放到 pro 的机器下。
 
-### 分别启动
 ```bash
 cd windows_端 && python main.py  # 端口8001
 cd mac_端 && python main.py      # 端口8002
