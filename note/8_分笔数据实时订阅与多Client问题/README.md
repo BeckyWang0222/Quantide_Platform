@@ -215,8 +215,8 @@ chmod +x start.sh
 
 ```yaml
 redis:
-  host: 8.217.201.221    # Redis服务器地址
-  port: 16379            # Redis端口
+  host:     # Redis服务器地址
+  port:             # Redis端口
   password: null         # Redis密码
   db: 0                  # Redis数据库编号
 
