@@ -85,8 +85,17 @@ Quantide_Platform/
     - Windows 端
         - Redis 的机器是 Windows （QMT）
         - 代码路径：`C:\wbq\mycode`
+        - 代码环境：`conda activate qmt`
         - 监控：http://localhost:8001
     - Mac 端
         - Clickhouse 存储的机器：APPLE PRO
         - 代码路径：`cd /Users/quantide/workspace/WBQ/quantide/分钟线数据实时订阅与日线采样/mac_端`
+        - 代码环境：`cd /Users/quantide/workspace/WBQ/quantide/`,`source .venv/bin/activate`
         - 监控：http://localhost:8002
+    - Client 端
+        - 测试的时候，使用的是 Mac mini 可以作为 Client 端的测试
+        - Mac mini 的环境：`conda activate course`
+
+Tips：
+- 只有 Pro 机器上使用的是 uv Python包管理工具，其他均是 Conda
+- Mac mini不进行任何存储和数据传输，主要用作测试和代码备份
