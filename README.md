@@ -79,7 +79,7 @@ Quantide_Platform/
 ### 本地代码地址说明
 - 日线实时订阅系统：
     - 代码 以及 Clickhouse 存储的机器：APPLE PRO
-    - 代码路径：/Users/quantide/workspace/WBQ/quantide/日线数据定时获取
+    - 代码路径：`/Users/quantide/workspace/WBQ/quantide/日线数据定时获取`
     - 运行环境：`cd /Users/quantide/workspace/WBQ/quantide/`,`source .venv/bin/activate`就能启动 quantide 环境
 - 分钟线实时订阅系统：
     - Windows 端
