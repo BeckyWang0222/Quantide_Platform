@@ -73,8 +73,8 @@ pip install -r requirements.txt
 ```python
 # Redis配置（无需密码认证）
 REDIS_CONFIG = {
-    'host': '8.217.201.221',
-    'port': 16379,
+    'host': '',
+    'port': ,
     'db': 0,
     'decode_responses': True
 }
