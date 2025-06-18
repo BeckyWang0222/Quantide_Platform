@@ -9,6 +9,7 @@
 - **Client端**：数据消费者，查询当日数据从Redis，查询历史数据从ClickHouse
 
 ## 系统架构
+![9_0](https://github.com/user-attachments/assets/feb579e4-4e28-455b-a193-6777a83b8663)
 
 ```
 QMT数据源 → Windows端 → Redis → Mac端 → ClickHouse
