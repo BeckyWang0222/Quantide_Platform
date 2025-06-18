@@ -190,7 +190,3 @@ python -m unittest discover
 - fastjson：JSON处理
 - tushare：Tushare API客户端
 
-## 开发者
-
-- 开发者：quantide
-- 联系方式：admin@example.com
