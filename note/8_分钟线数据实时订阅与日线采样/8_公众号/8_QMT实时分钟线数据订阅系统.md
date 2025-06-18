@@ -152,9 +152,9 @@ class QMTSubscriber:
 class DataConsumer:
     def __init__(self, config):
         self.redis_client = redis.StrictRedis(
-            host="8.217.201.221",
-            port=16379,
-            password="quantide666"
+            host="",
+            port=,
+            password=""
         )
         self.clickhouse_client = Client(host='localhost')
 
